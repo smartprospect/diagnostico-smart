@@ -827,7 +827,7 @@ function showResult() {
   const scoresPilares = {};
   PILARES.forEach(p => scoresPilares[p.id] = getPilarScore(p.id));
 
-  sendSmartEvent('smart_diag_completo', 'track', getUserData(), {
+  sendSmartEvent('CompleteRegistration', 'track', getUserData(), {
     score_total: scoreTotal,
     scores_pilares: JSON.stringify(scoresPilares),
     perfil_faturamento: getPerfilOferta(faixaFat),
