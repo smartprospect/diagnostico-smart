@@ -14,13 +14,11 @@
 <link rel="canonical" href="https://diagnostico.smartprospect.com.br">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-5S99DL7');</script>
-<!-- End Google Tag Manager -->
 <style>
 :root {
   --navy: #161c34;
@@ -148,7 +146,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--navy); min-
 .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
 .btn-row-end { justify-content: flex-end; }
 
-/* ── RESULT STYLES ── */
+/* RESULT STYLES */
 .result-header {
   text-align: center; padding: 32px 24px; margin-bottom: 24px;
   background: linear-gradient(135deg, var(--navy) 0%, #1e2a50 100%);
@@ -260,10 +258,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--navy); min-
 </style>
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5S99DL7"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 <div class="bg-pattern"></div>
 <div class="app" id="app">
 
@@ -272,7 +268,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="progress-label" id="progressLabel"></div>
   </div>
 
-  <!-- Screen 0: Cadastro -->
   <div class="screen active" id="screen-0">
     <div class="card">
       <div class="diag-title">Diagnóstico Smart</div>
@@ -315,6 +310,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <div class="field">
+        <label>E-mail (Opcional)</label>
+        <input type="email" id="f_email" placeholder="seu@email.com">
+      </div>
+      <div class="field">
         <label>Instagram do seu negócio</label>
         <div style="position:relative;">
           <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:15px;font-weight:600;">@</span>
@@ -327,7 +326,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
-  <!-- Screen 1: Dados do Negócio -->
   <div class="screen" id="screen-1">
     <div class="card">
       <div class="screen-title">Sobre o seu negócio</div>
@@ -371,6 +369,109 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <script>
+// ══════════════════════════════════════
+// NOVO SISTEMA DE TRACKING (CAPI + GTM)
+// ══════════════════════════════════════
+
+// 1. Capturar UTMs e GCLID da URL e salvar na sessão
+function captureURLParameters() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramsToSave = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'];
+  
+  paramsToSave.forEach(param => {
+    if (urlParams.has(param)) {
+      sessionStorage.setItem(param, urlParams.get(param));
+    }
+  });
+}
+captureURLParameters(); // Executa no carregamento da página
+
+// 2. Auxiliar para ler cookies (_fbp, _fbc)
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match) return match[2];
+  return null;
+}
+
+// 3. Montar UserData
+function getUserData() {
+  const cidadeEstado = (document.getElementById('f_cidade')?.value || '').split('/');
+  return {
+    first_name: document.getElementById('f_nome')?.value.trim() || '',
+    phone: document.getElementById('f_whatsapp')?.value.trim() || '',
+    email: document.getElementById('f_email')?.value.trim() || '',
+    city: (cidadeEstado[0] || '').trim(),
+    state: (cidadeEstado[1] || '').trim()
+  };
+}
+
+// 4. Função Central de Disparo Smart Event (Webhook + GTM)
+async function sendSmartEvent(eventName, eventType, userData = {}, customData = {}) {
+  const eventId = 'smart_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+  
+  const payload = {
+    event_name: eventName,
+    event_type: eventType,
+    event_id: eventId,
+    event_time: Math.floor(Date.now() / 1000),
+    event_source_url: window.location.href,
+    source_property: 'diagnostico',
+    user_agent: navigator.userAgent,
+    fbp: getCookie('_fbp'),
+    fbc: getCookie('_fbc'),
+    gclid: sessionStorage.getItem('gclid'),
+    user_data: {
+      email: userData.email || '',
+      phone: userData.phone || '',
+      first_name: userData.first_name || '',
+      city: userData.city || '',
+      state: userData.state || ''
+    },
+    custom_data: customData,
+    utms: {
+      utm_source: sessionStorage.getItem('utm_source') || '',
+      utm_medium: sessionStorage.getItem('utm_medium') || '',
+      utm_campaign: sessionStorage.getItem('utm_campaign') || '',
+      utm_content: sessionStorage.getItem('utm_content') || '',
+      utm_term: sessionStorage.getItem('utm_term') || ''
+    }
+  };
+
+  // (a) Enviar para Webhook CAPI n8n
+  const webhookUrl = 'https://n8n.smartprospect.com/webhook/smart-capi'; // Substitua pela sua URL final depois
+  try {
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    });
+  } catch (error) {
+    console.error('Erro CAPI:', error);
+  }
+
+  // (b) Enviar para dataLayer (GTM)
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: eventName,
+    event_id: eventId,
+    ...customData
+  });
+}
+
+// Auxiliar para cliques de CTA
+function trackCTA(produto, tipoAcao, valor = 0) {
+  const userData = getUserData();
+  const faixaFat = parseInt(document.getElementById('f_faturamento')?.value) || 0;
+  const perfil_faturamento = getPerfilOferta(faixaFat);
+
+  if (tipoAcao === 'checkout') {
+    sendSmartEvent('ClickCheckout', 'trackCustom', userData, { produto, valor });
+  } else {
+    sendSmartEvent('Contact', 'track', userData, { produto, perfil_faturamento });
+  }
+}
+
 // ══════════════════════════════════════
 // DATA
 // ══════════════════════════════════════
@@ -616,10 +717,15 @@ function nextScreen() {
     const insta = document.getElementById('f_instagram').value.trim();
     if (!insta) { showAlert('Por favor, preencha o Instagram do seu negócio.'); document.getElementById('f_instagram').focus(); return; }
     updateTipoLabels();
+
+    // TRACKING MQL (Acontece após passar da validação da Tela 1)
+    sendSmartEvent('smart_lead_mql', 'trackCustom', getUserData(), {});
   }
+  
   // Validation: Dados do Negócio (screen 1)
   if (currentScreen === 1) {
-    const fat = document.getElementById('f_faturamento').value;
+    const fatSelect = document.getElementById('f_faturamento');
+    const fat = fatSelect.value;
     const ticket = document.getElementById('f_ticket').value;
     const eventos = document.getElementById('f_eventos').value;
     const orcamentos = document.getElementById('f_orcamentos').value;
@@ -627,7 +733,17 @@ function nextScreen() {
     if (!ticket || parseFloat(ticket) <= 0) { showAlert('Por favor, informe o ticket médio por evento.'); document.getElementById('f_ticket').focus(); return; }
     if (!eventos || parseFloat(eventos) <= 0) { showAlert('Por favor, informe quantos eventos fecha por mês.'); document.getElementById('f_eventos').focus(); return; }
     if (!orcamentos || parseFloat(orcamentos) <= 0) { showAlert('Por favor, informe quantos orçamentos recebe por mês.'); document.getElementById('f_orcamentos').focus(); return; }
+
+    // TRACKING SQL (Lead Padrão se fat >= 50k)
+    const faixaInt = parseInt(fat);
+    if (faixaInt >= 50) {
+      sendSmartEvent('Lead', 'track', getUserData(), {
+        faturamento_faixa: fatSelect.options[fatSelect.selectedIndex].text,
+        ticket_medio: ticket
+      });
+    }
   }
+
   // Validation: Pilares (screens 2 to 6)
   if (currentScreen >= 2 && currentScreen <= 6) {
     const pilarIdx = currentScreen - 2;
@@ -690,10 +806,37 @@ function showResult() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   renderResult();
   sendToWebhook();
+  
+  // TRACKING DIAGNÓSTICO COMPLETO (Tela 9)
+  const ticket = parseFloat(document.getElementById('f_ticket').value) || 8000;
+  const eventos = parseFloat(document.getElementById('f_eventos').value) || 5;
+  const orcamentos = parseFloat(document.getElementById('f_orcamentos').value) || 30;
+  const faixaFat = parseInt(document.getElementById('f_faturamento').value) || 0;
+  
+  const taxaAtual = orcamentos > 0 ? (eventos / orcamentos) : 0.15;
+  const fatAtual = eventos * ticket;
+  let taxaOtimizada;
+  if (taxaAtual < 0.20) taxaOtimizada = 0.25;
+  else if (taxaAtual < 0.30) taxaOtimizada = 0.35;
+  else taxaOtimizada = Math.min(taxaAtual + 0.10, 0.60);
+  const eventosOtimizados = Math.round(orcamentos * taxaOtimizada);
+  const fatOtimizado = eventosOtimizados * ticket;
+  const dinheiroMesa = Math.max(fatOtimizado - fatAtual, 0);
+
+  const scoreTotal = PILARES.reduce((acc, p) => acc + getPilarScore(p.id), 0);
+  const scoresPilares = {};
+  PILARES.forEach(p => scoresPilares[p.id] = getPilarScore(p.id));
+
+  sendSmartEvent('smart_diag_completo', 'track', getUserData(), {
+    score_total: scoreTotal,
+    scores_pilares: JSON.stringify(scoresPilares),
+    perfil_faturamento: getPerfilOferta(faixaFat),
+    dinheiro_na_mesa: dinheiroMesa
+  });
 }
 
 // ══════════════════════════════════════
-// WEBHOOK
+// WEBHOOK ANTIGO DO N8N (Mantido)
 // ══════════════════════════════════════
 function getPerfilOferta(faixa) {
   if (faixa >= 100) return 'smart';
@@ -715,7 +858,6 @@ function sendToWebhook() {
   let instagram = document.getElementById('f_instagram').value.trim().replace(/^@/, '');
   if (instagram) instagram = '@' + instagram;
 
-  // UTM capture
   const urlParams = new URLSearchParams(window.location.search);
   const utm_source = urlParams.get('utm_source') || '';
   const utm_medium = urlParams.get('utm_medium') || '';
@@ -738,32 +880,18 @@ function sendToWebhook() {
   });
 
   const payload = {
-    nome,
-    negocio,
-    tipo: tipoNegocio,
-    cidade,
-    whatsapp,
-    instagram,
-    faturamento: String(faixa),
-    ticket_medio: String(ticket),
-    eventos_mes: String(eventos),
-    orcamentos_mes: String(orcamentos),
+    nome, negocio, tipo: tipoNegocio, cidade, whatsapp, instagram,
+    faturamento: String(faixa), ticket_medio: String(ticket),
+    eventos_mes: String(eventos), orcamentos_mes: String(orcamentos),
     taxa_conversao: Math.round(taxaAtual * 100) + '%',
     faturamento_atual: String(Math.round(fatAtual)),
     faturamento_potencial: String(Math.round(fatOtimizado)),
     dinheiro_mesa: String(Math.round(dinheiroMesa)),
-    pilar_estrutura: scores[0],
-    pilar_posicionamento: scores[1],
-    pilar_aquisicao: scores[2],
-    pilar_comercial: scores[3],
-    pilar_previsibilidade: scores[4],
-    desafio,
+    pilar_estrutura: scores[0], pilar_posicionamento: scores[1],
+    pilar_aquisicao: scores[2], pilar_comercial: scores[3],
+    pilar_previsibilidade: scores[4], desafio,
     perfil_oferta: getPerfilOferta(faixa),
-    utm_source,
-    utm_medium,
-    utm_campaign,
-    utm_term,
-    utm_content,
+    utm_source, utm_medium, utm_campaign, utm_term, utm_content,
   };
 
   fetch('https://n8nwebhook.smartprospect.com.br/webhook/diagnostico-smart', {
@@ -787,7 +915,6 @@ function renderResult() {
 
   const scores = PILARES.map(p => ({ ...p, score: getPilarScore(p.id), cls: getClass(getPilarScore(p.id)) }));
 
-  // Calc
   const taxaAtual = orcamentos > 0 ? (eventos / orcamentos) : 0.15;
   const fatAtual = eventos * ticket;
   let taxaOtimizada;
@@ -860,57 +987,53 @@ function buildOffer(faixa, tipo, dinheiroMesa) {
   const linkCurso = 'https://wa.me/5514997612106?text=Ol%C3%A1,%20vim%20pelo%20link%20do%20Checklist%20M%C3%A9todo%20Smart%20para%20Buffets%20e%20Espa%C3%A7o%20de%20Festas%20e%20quero%20garantir%20a%20oferta%20do%20Treinamento%20Smart%20Starter.';
   const linkChecklist = 'https://payfast.greenn.com.br/jt2p94x/?utm_source=diagnostico-smart';
 
-  // Acima de 70k (faixa >= 100) → Smart direto
   if (faixa >= 100) {
     return `
       <div class="cta-main">
         <div class="cta-title">Seu ${tipo} está pronto para o próximo nível</div>
         <div class="cta-desc">Você já tem resultado, mas está operando abaixo do potencial. Com uma equipe profissional dedicada ao seu crescimento, dá para transformar esses números em poucos meses.</div>
-        <a href="${linkSessao}" target="_blank" class="btn btn-green" style="width:100%;text-decoration:none;">Agendar Sessão Estratégica Gratuita →</a>
+        <a href="${linkSessao}" target="_blank" onclick="trackCTA('Sessão Estratégica', 'contact')" class="btn btn-green" style="width:100%;text-decoration:none;">Agendar Sessão Estratégica Gratuita →</a>
         <div style="font-size:11px;opacity:0.6;margin-top:8px;">Vagas limitadas por região para não gerar concorrência entre clientes</div>
       </div>`;
   }
 
-  // 50-70k (faixa 70) → Duas opções, sem checklist
   if (faixa >= 70) {
     return `
       <div class="card" style="text-align:center;">
         <div style="font-size:13px;font-weight:600;color:var(--gray-400);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Seu ${tipo} está em um momento decisivo</div>
         <div style="font-size:15px;color:var(--navy);margin-bottom:20px;font-weight:500;">Existem duas formas de acelerar o seu crescimento:</div>
         <div class="dual-path">
-          <div class="path-card" onclick="window.open('${linkImplementacao}','_blank')">
+          <div class="path-card" onclick="trackCTA('Implementação', 'contact'); window.open('${linkImplementacao}','_blank')">
             <div class="pc-icon">🛠️</div>
             <div class="pc-title">Eu quero executar</div>
             <div class="pc-desc">Nosso time monta toda a estrutura e você opera com direcionamento profissional. Ideal para quem tem tempo.</div>
-            <div style="margin-top:14px;"><a href="${linkImplementacao}" target="_blank" class="btn btn-navy" style="font-size:13px;padding:10px 20px;text-decoration:none;">Conhecer →</a></div>
+            <div style="margin-top:14px;"><span class="btn btn-navy" style="font-size:13px;padding:10px 20px;text-decoration:none;">Conhecer →</span></div>
           </div>
-          <div class="path-card" onclick="window.open('${linkSessao}','_blank')">
+          <div class="path-card" onclick="trackCTA('Sessão Estratégica', 'contact'); window.open('${linkSessao}','_blank')">
             <div class="pc-icon">🚀</div>
             <div class="pc-title">Eu quero delegar</div>
             <div class="pc-desc">Equipe profissional dedicada ao seu ${tipo} por 9 meses. Estratégia, anúncios e processo comercial.</div>
-            <div style="margin-top:14px;"><a href="${linkSessao}" target="_blank" class="btn btn-primary" style="font-size:13px;padding:10px 20px;text-decoration:none;">Agendar Sessão →</a></div>
+            <div style="margin-top:14px;"><span class="btn btn-primary" style="font-size:13px;padding:10px 20px;text-decoration:none;">Agendar Sessão →</span></div>
           </div>
         </div>
       </div>`;
   }
 
-  // 30-50k (faixa 40 ou 50) → Implementação + checklist pequeno
   if (faixa >= 40) {
     return `
       <div class="cta-main">
         <div class="cta-title">Seu ${tipo} tem potencial real de crescimento</div>
         <div class="cta-desc">O primeiro passo é montar a base certa — anúncios profissionais, estratégia validada e acompanhamento de resultados. Nosso time faz a configuração e você começa a receber orçamentos com estratégia.</div>
-        <a href="${linkImplementacao}" target="_blank" class="btn btn-green" style="width:100%;text-decoration:none;">Conhecer a Implementação Smart →</a>
+        <a href="${linkImplementacao}" target="_blank" onclick="trackCTA('Implementação', 'contact')" class="btn btn-green" style="width:100%;text-decoration:none;">Conhecer a Implementação Smart →</a>
       </div>
       <div class="checklist-mini">
         <div class="chk-label">Quer começar agora enquanto se organiza?</div>
         <div class="chk-title">Checklist Método Smart</div>
         <div class="chk-desc">O passo a passo do que implementar no seu ${tipo}. Avance em 30 dias e ganhe R$197 de desconto.</div>
-        <a href="${linkChecklist}" target="_blank" class="btn btn-navy" style="font-size:13px;padding:10px 20px;text-decoration:none;">Quero o Checklist por R$97 →</a>
+        <a href="${linkChecklist}" target="_blank" onclick="trackCTA('Checklist', 'checkout', 97)" class="btn btn-navy" style="font-size:13px;padding:10px 20px;text-decoration:none;">Quero o Checklist por R$97 →</a>
       </div>`;
   }
 
-  // Até 30k (faixa 20 ou 30) → Checklist destaque + Curso + Implementação
   return `
     <div class="offer-card">
       <div class="offer-tag">COMECE AGORA</div>
@@ -918,23 +1041,22 @@ function buildOffer(faixa, tipo, dinheiroMesa) {
       <div class="offer-desc">O passo a passo completo do que implementar no seu ${tipo} para começar a gerar resultados. Avance para o próximo passo em até 30 dias e ganhe R$197 de desconto.</div>
       <div style="font-size:20px; color:#AE0000; margin-bottom:4px; text-decoration:line-through; font-weight:700;">R$297</div>
       <div class="offer-price">R$97</div>
-      <a href="${linkChecklist}" target="_blank" class="btn btn-green" style="width:100%;margin-bottom:16px;text-decoration:none;">Quero o Checklist por R$97 →</a>
+      <a href="${linkChecklist}" target="_blank" onclick="trackCTA('Checklist', 'checkout', 97)" class="btn btn-green" style="width:100%;margin-bottom:16px;text-decoration:none;">Quero o Checklist por R$97 →</a>
     </div>
     <div class="cta-main">
       <div class="cta-title">Quer acelerar seus resultados?</div>
       <div class="cta-desc">Aprenda a criar uma estrutura profissional de anúncios e saia do impulsionar de vez. Ou deixe nosso time fazer a configuração por você.</div>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <a href="${linkCurso}" target="_blank" class="btn btn-green" style="font-size:13px;text-decoration:none;">Conhecer o Curso Smart Starter →</a>
-        <a href="${linkImplementacao}" target="_blank" class="btn btn-navy" style="font-size:13px;text-decoration:none;">Conhecer a Implementação Smart →</a>
+        <a href="${linkCurso}" target="_blank" onclick="trackCTA('Curso', 'checkout', 0)" class="btn btn-green" style="font-size:13px;text-decoration:none;">Conhecer o Curso Smart Starter →</a>
+        <a href="${linkImplementacao}" target="_blank" onclick="trackCTA('Implementação', 'contact')" class="btn btn-navy" style="font-size:13px;text-decoration:none;">Conhecer a Implementação Smart →</a>
       </div>
     </div>`;
 }
 
 // ══════════════════════════════════════
-// RADAR
+// RADAR E MÁSCARA
 // ══════════════════════════════════════
 function buildRadar(scores) {
-  // Wide viewBox so labels never clip
   const vw = 600, vh = 440;
   const cx = vw / 2, cy = 210;
   const maxR = 130;
@@ -956,7 +1078,6 @@ function buildRadar(scores) {
   let axes = '';
   for(let i=0;i<n;i++){const[x,y]=pt(i,maxR);axes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd" stroke-width="0.8"/>`;}
 
-  // Full pillar names - positioned well within viewBox
   const labelConfig = [
     { text: 'Estrutura Digital', anchor: 'middle', offX: 0, offY: -18 },
     { text: 'Posicionamento', anchor: 'start', offX: 12, offY: 5 },
@@ -985,11 +1106,9 @@ function buildRadar(scores) {
     dots+=`<circle cx="${x}" cy="${y}" r="6" fill="${color}" stroke="white" stroke-width="2.5"/>`;
   });
 
-  // Legend row - evenly spaced, centered
   const ly = vh - 20;
   const legendNames = ['Estrutura Digital','Posicionamento','Aquisição','Comercial','Previsibilidade'];
   let legendSVG = `<line x1="40" y1="${ly-16}" x2="${vw-40}" y2="${ly-16}" stroke="#e0e0e0" stroke-width="0.8"/>`;
-  // Fixed x positions for 5 items, evenly distributed across viewBox
   const positions = [60, 170, 280, 380, 480];
   legendNames.forEach((name,i) => {
     const lx = positions[i];
@@ -1005,7 +1124,6 @@ function buildRadar(scores) {
   </svg>`;
 }
 
-// Phone mask
 document.addEventListener('DOMContentLoaded', function() {
   const phoneInput = document.getElementById('f_whatsapp');
   if (phoneInput) {
