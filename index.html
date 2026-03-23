@@ -376,7 +376,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 // 1. Capturar UTMs e GCLID da URL e salvar na sessão
 function captureURLParameters() {
   const urlParams = new URLSearchParams(window.location.search);
-  const paramsToSave = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'];
+  const paramsToSave = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid'];
   
   paramsToSave.forEach(param => {
     if (urlParams.has(param)) {
@@ -438,7 +438,7 @@ async function sendSmartEvent(eventName, eventType, userData = {}, customData = 
   };
 
   // (a) Enviar para Webhook CAPI n8n
-  const webhookUrl = 'https://n8n.smartprospect.com/webhook/smart-capi'; // Substitua pela sua URL final depois
+  const webhookUrl = 'https://n8n.seuservidor.com/webhook/smart-capi'; // Lembre-se de colocar sua URL final aqui!
   try {
     fetch(webhookUrl, {
       method: 'POST',
@@ -703,7 +703,7 @@ function updateProgress() {
 
 // Navigation
 function nextScreen() {
-  // Validation: Cadastro (screen 0)
+  // Validation: Cadastro (screen 0) - MQL REMOVIDO DAQUI
   if (currentScreen === 0) {
     const nome = document.getElementById('f_nome').value.trim();
     const negocio = document.getElementById('f_negocio').value.trim();
@@ -717,9 +717,6 @@ function nextScreen() {
     const insta = document.getElementById('f_instagram').value.trim();
     if (!insta) { showAlert('Por favor, preencha o Instagram do seu negócio.'); document.getElementById('f_instagram').focus(); return; }
     updateTipoLabels();
-
-    // TRACKING MQL (Acontece após passar da validação da Tela 1)
-    sendSmartEvent('smart_lead_mql', 'trackCustom', getUserData(), {});
   }
   
   // Validation: Dados do Negócio (screen 1)
@@ -734,17 +731,14 @@ function nextScreen() {
     if (!eventos || parseFloat(eventos) <= 0) { showAlert('Por favor, informe quantos eventos fecha por mês.'); document.getElementById('f_eventos').focus(); return; }
     if (!orcamentos || parseFloat(orcamentos) <= 0) { showAlert('Por favor, informe quantos orçamentos recebe por mês.'); document.getElementById('f_orcamentos').focus(); return; }
 
-    // TRACKING SQL (Lead Padrão se fat >= 50k)
-    const faixaInt = parseInt(fat);
-    if (faixaInt >= 50) {
-      sendSmartEvent('Lead', 'track', getUserData(), {
-        faturamento_faixa: fatSelect.options[fatSelect.selectedIndex].text,
-        ticket_medio: ticket
-      });
-    }
+    // TRACKING INICIOU DIAGNOSTICO (Substitui o antigo MQL - Tem muito mais qualidade de dados)
+    sendSmartEvent('Iniciou_Diagnostico', 'trackCustom', getUserData(), {
+      faturamento_faixa: fatSelect.options[fatSelect.selectedIndex].text,
+      ticket_medio: ticket
+    });
   }
 
-  // Validation: Pilares (screens 2 to 6)
+  // Validation: Pilares
   if (currentScreen >= 2 && currentScreen <= 6) {
     const pilarIdx = currentScreen - 2;
     const pilarId = PILARES[pilarIdx].id;
@@ -765,7 +759,6 @@ function nextScreen() {
 }
 
 function showAlert(msg) {
-  // Remove existing alert if any
   const existing = document.querySelector('.validation-alert');
   if (existing) existing.remove();
   const el = document.createElement('div');
@@ -807,11 +800,12 @@ function showResult() {
   renderResult();
   sendToWebhook();
   
-  // TRACKING DIAGNÓSTICO COMPLETO (Tela 9)
+  // TRACKING DIAGNÓSTICO COMPLETO & LEAD (A nova regra de ouro)
+  const fatSelect = document.getElementById('f_faturamento');
   const ticket = parseFloat(document.getElementById('f_ticket').value) || 8000;
   const eventos = parseFloat(document.getElementById('f_eventos').value) || 5;
   const orcamentos = parseFloat(document.getElementById('f_orcamentos').value) || 30;
-  const faixaFat = parseInt(document.getElementById('f_faturamento').value) || 0;
+  const faixaFat = parseInt(fatSelect.value) || 0;
   
   const taxaAtual = orcamentos > 0 ? (eventos / orcamentos) : 0.15;
   const fatAtual = eventos * ticket;
@@ -827,20 +821,27 @@ function showResult() {
   const scoresPilares = {};
   PILARES.forEach(p => scoresPilares[p.id] = getPilarScore(p.id));
 
-  sendSmartEvent('CompleteRegistration', 'track', getUserData(), {
+  const customData = {
     score_total: scoreTotal,
     scores_pilares: JSON.stringify(scoresPilares),
     perfil_faturamento: getPerfilOferta(faixaFat),
-    dinheiro_na_mesa: dinheiroMesa
-  });
+    dinheiro_na_mesa: dinheiroMesa,
+    faturamento_faixa: fatSelect.options[fatSelect.selectedIndex].text,
+    ticket_medio: ticket
+  };
+
+  // 1. Dispara CompleteRegistration para TODOS
+  sendSmartEvent('CompleteRegistration', 'track', getUserData(), customData);
+
+  // 2. Dispara Lead APENAS para quem fatura acima de 50k (faixa 70 pra cima)
+  if (faixaFat >= 70) {
+    sendSmartEvent('Lead', 'track', getUserData(), customData);
+  }
 }
 
-// ══════════════════════════════════════
-// WEBHOOK ANTIGO DO N8N (Mantido)
-// ══════════════════════════════════════
 function getPerfilOferta(faixa) {
   if (faixa >= 100) return 'smart';
-  if (faixa >= 70) return 'dual';
+  if (faixa >= 70) return 'dual'; // Mantido por padrão interno, mas vira premium na tela
   if (faixa >= 40) return 'implementacao';
   return 'starter';
 }
@@ -987,38 +988,20 @@ function buildOffer(faixa, tipo, dinheiroMesa) {
   const linkCurso = 'https://wa.me/5514997612106?text=Ol%C3%A1,%20vim%20pelo%20link%20do%20Checklist%20M%C3%A9todo%20Smart%20para%20Buffets%20e%20Espa%C3%A7o%20de%20Festas%20e%20quero%20garantir%20a%20oferta%20do%20Treinamento%20Smart%20Starter.';
   const linkChecklist = 'https://payfast.greenn.com.br/jt2p94x/?utm_source=diagnostico-smart';
 
-  if (faixa >= 100) {
-    return `
-      <div class="cta-main">
-        <div class="cta-title">Seu ${tipo} está pronto para o próximo nível</div>
-        <div class="cta-desc">Você já tem resultado, mas está operando abaixo do potencial. Com uma equipe profissional dedicada ao seu crescimento, dá para transformar esses números em poucos meses.</div>
-        <a href="${linkSessao}" target="_blank" onclick="trackCTA('Sessão Estratégica', 'contact')" class="btn btn-green" style="width:100%;text-decoration:none;">Agendar Sessão Estratégica Gratuita →</a>
-        <div style="font-size:11px;opacity:0.6;margin-top:8px;">Vagas limitadas por região para não gerar concorrência entre clientes</div>
-      </div>`;
-  }
-
+  // ATUALIZADO (CRO Premium): Leads High-Ticket (Acima de 50k - faixas 70 e 100)
   if (faixa >= 70) {
     return `
-      <div class="card" style="text-align:center;">
-        <div style="font-size:13px;font-weight:600;color:var(--gray-400);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Seu ${tipo} está em um momento decisivo</div>
-        <div style="font-size:15px;color:var(--navy);margin-bottom:20px;font-weight:500;">Existem duas formas de acelerar o seu crescimento:</div>
-        <div class="dual-path">
-          <div class="path-card" onclick="trackCTA('Implementação', 'contact'); window.open('${linkImplementacao}','_blank')">
-            <div class="pc-icon">🛠️</div>
-            <div class="pc-title">Eu quero executar</div>
-            <div class="pc-desc">Nosso time monta toda a estrutura e você opera com direcionamento profissional. Ideal para quem tem tempo.</div>
-            <div style="margin-top:14px;"><span class="btn btn-navy" style="font-size:13px;padding:10px 20px;text-decoration:none;">Conhecer →</span></div>
-          </div>
-          <div class="path-card" onclick="trackCTA('Sessão Estratégica', 'contact'); window.open('${linkSessao}','_blank')">
-            <div class="pc-icon">🚀</div>
-            <div class="pc-title">Eu quero delegar</div>
-            <div class="pc-desc">Equipe profissional dedicada ao seu ${tipo} por 9 meses. Estratégia, anúncios e processo comercial.</div>
-            <div style="margin-top:14px;"><span class="btn btn-primary" style="font-size:13px;padding:10px 20px;text-decoration:none;">Agendar Sessão →</span></div>
-          </div>
-        </div>
+      <div style="background: linear-gradient(135deg, var(--navy) 0%, #0a0f24 100%); border-radius: 16px; padding: 36px 24px; text-align: center; color: white; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(22,28,52,0.3); border: 1px solid rgba(255,255,255,0.1);">
+        <div style="color: #fbbf24; font-size: 18px; margin-bottom: 10px; letter-spacing: 3px;">★★★★★</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--blue-light); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;">Momento Decisivo</div>
+        <div style="font-size: 22px; font-weight: 800; margin-bottom: 12px; line-height: 1.3;">Seu ${tipo} está pronto para escalar com estratégia.</div>
+        <div style="font-size: 14px; opacity: 0.85; margin-bottom: 28px; line-height: 1.6;">Você já validou o seu negócio e tem resultados. O próximo passo não é trabalhar mais, é trabalhar com a estratégia certa. Fale com um especialista do nosso time para desenhar seu plano de crescimento.</div>
+        <a href="${linkSessao}" target="_blank" onclick="trackCTA('Sessão Estratégica', 'contact')" class="btn btn-green" style="width:100%; text-decoration:none; font-size: 15px; padding: 16px; box-shadow: 0 4px 15px rgba(51,204,102,0.4);">Agendar Sessão Estratégica Gratuita →</a>
+        <div style="font-size:11px; color: #fbbf24; margin-top:14px; font-weight: 500; opacity: 0.9;">⚠️ Vagas limitadas para manter a exclusividade da assessoria</div>
       </div>`;
   }
 
+  // Leads Mid-Ticket (40k-50k)
   if (faixa >= 40) {
     return `
       <div class="cta-main">
@@ -1034,6 +1017,7 @@ function buildOffer(faixa, tipo, dinheiroMesa) {
       </div>`;
   }
 
+  // Leads Starter (Abaixo de 40k)
   return `
     <div class="offer-card">
       <div class="offer-tag">COMECE AGORA</div>
