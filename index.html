@@ -989,15 +989,17 @@ function buildOffer(faixa, tipo, dinheiroMesa) {
   const linkChecklist = 'https://payfast.greenn.com.br/jt2p94x/?utm_source=diagnostico-smart';
 
   // ATUALIZADO (CRO Premium): Leads High-Ticket (Acima de 50k - faixas 70 e 100)
-  if (faixa >= 70) {
+ if (faixa >= 70) {
+    const nomeEmpresa = document.getElementById('f_negocio')?.value.trim() || 'Sua Empresa';
+
     return `
       <div style="background: linear-gradient(135deg, var(--navy) 0%, #0a0f24 100%); border-radius: 16px; padding: 36px 24px; text-align: center; color: white; margin-bottom: 16px; box-shadow: 0 8px 24px rgba(22,28,52,0.3); border: 1px solid rgba(255,255,255,0.1);">
         <div style="color: #fbbf24; font-size: 18px; margin-bottom: 10px; letter-spacing: 3px;">★★★★★</div>
-        <div style="font-size: 12px; font-weight: 700; color: var(--blue-light); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;">Momento Decisivo</div>
-        <div style="font-size: 22px; font-weight: 800; margin-bottom: 12px; line-height: 1.3;">Seu ${tipo} está pronto para escalar com estratégia.</div>
-        <div style="font-size: 14px; opacity: 0.85; margin-bottom: 28px; line-height: 1.6;">Você já validou o seu negócio e tem resultados. O próximo passo não é trabalhar mais, é trabalhar com a estratégia certa. Fale com um especialista do nosso time para desenhar seu plano de crescimento.</div>
-        <a href="${linkSessao}" target="_blank" onclick="trackCTA('Sessão Estratégica', 'contact')" class="btn btn-green" style="width:100%; text-decoration:none; font-size: 15px; padding: 16px; box-shadow: 0 4px 15px rgba(51,204,102,0.4);">Agendar Sessão Estratégica Gratuita →</a>
-        <div style="font-size:11px; color: #fbbf24; margin-top:14px; font-weight: 500; opacity: 0.9;">⚠️ Vagas limitadas para manter a exclusividade da assessoria</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--blue-light); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;">PARABÉNS, ${nomeEmpresa}! VOCÊ SE QUALIFICOU</div>
+        <div style="font-size: 22px; font-weight: 800; margin-bottom: 12px; line-height: 1.3;">Agenda aberta para atender o seu ${tipo} — por enquanto!</div>
+        <div style="font-size: 14px; opacity: 0.85; margin-bottom: 28px; line-height: 1.6;">Com base nas suas respostas, você se qualificou para uma consultoria exclusiva de 30 minutos. Nosso time vai analisar a fundo sua operação e te mostrar exatamente o que fazer para fechar os contratos que você está deixando na mesa.<br><br><strong>Clique abaixo antes que a agenda feche.</strong></div>
+        <a href="${linkSessao}" target="_blank" onclick="trackCTA('Sessão Estratégica', 'contact')" class="btn btn-green" style="width:100%; text-decoration:none; font-size: 15px; padding: 16px; box-shadow: 0 4px 15px rgba(51,204,102,0.4);">Agendar Consultoria de 30 Minutos →</a>
+        <div style="font-size:11px; color: #fbbf24; margin-top:14px; font-weight: 500; opacity: 0.9;">⚠️ Apenas 5 vagas liberadas nesta semana.</div>
       </div>`;
   }
 
